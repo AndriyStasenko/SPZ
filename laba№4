@@ -1,0 +1,97 @@
+//Процес 1 відкриває файл і породжує нащадка 2. Обидва процеси пишуть у нього по черзі по N чисел. Організувати по М циклів 
+//запису за допомогою сигналів.   
+//Лістинг програми:
+
+#include <fcntl.h>
+#include <sys/types.h>
+#include <unistd.h>
+#include <iostream>
+#include <fstream>
+#include <signal.h>
+#include <cstdlib>
+using namespace std;
+
+const char FILENAME[] = "1.txt";
+int N,M;
+fstream a;
+pid_t pid1, pid2;
+
+void proc1(int s)
+{
+// запис N чисел в текстовий файл 
+a.open(FILENAME,ios::out|ios::app);
+for(int i=0;i<N;++i)
+{ a « i«endl; }
+a«endl;
+a.close();
+cout « "PID " « pid1 « " write to file now...\n";
+M-=2;
+if(M >= 0)
+{ kill(pid2,SIGUSR2); }
+else
+{ kill(0, SIGTERM); }
+}
+
+
+
+void proc2(int s)
+{
+// запис N чисел в текстовий файл
+a.open(FILENAME,ios::out|ios::app);
+for(int i=N;i<=(N*2);++i)
+{ a « i«endl; }
+a«endl;
+a.close();
+cout « "PID " « pid2 « " write to file now...\n";
+M-=2;
+if(M >= 0)
+kill(pid1,SIGUSR1);
+else
+kill(0, SIGTERM);
+}
+
+void rez(int s)
+{
+cout « "PID " « getpid() « " terminating now...\n";
+exit(EXIT_SUCCESS);
+}
+
+int main()
+{
+cout«"N= ";
+cin»N;
+cout«endl«"M= ";
+cin»M;
+cout«endl;
+//pid1 - батьківський процес
+pid1 = getpid();
+cout « "PID " « pid1 « "(parent) has been created already...\n";
+// очистка вмісту файлу
+a.open(FILENAME, ios::out);
+a.close();
+//pid2 - дочірній процес
+pid2 = fork();
+if(pid2 == -1)
+{
+cout « "Couldnt create process\n";
+return 1;
+}
+else
+if(pid2 == 0)
+{
+M -= 1;
+pid2 = getpid();
+cout « "PID " « pid2 « "(child) has been created already...\n";
+signal(SIGUSR2,proc2);
+signal(SIGTERM,rez);
+kill(pid1,SIGUSR1);
+while(1);
+}
+else
+{
+signal(SIGUSR1,proc1);
+signal(SIGTERM,rez);
+while(1);
+}
+return 0;
+}
