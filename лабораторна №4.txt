@@ -1,0 +1,67 @@
+///1) Напишіть програму, що працює з N процесами і створює 2 групи:
+N = 5, {1,2,3}, {2,3,4} Знайти об’єднання груп.
+
+//Лістинг програми:
+
+#include <mpi.h>
+#include <iostream>
+using namespace std;
+
+void main(int argc,char **argv)
+{
+	MPI_Init(&argc,&argv);
+	int N,rank,gr_rank;
+	int gmas[6] = {1,2,3,2,3,4};
+
+	MPI_Group G_world,G1,G2,G_rez;
+	MPI_Comm_group(MPI_COMM_WORLD,&G_world);
+
+	MPI_Group_incl(G_world,3,gmas,&G1);
+	MPI_Group_incl(G_world,3,gmas+3,&G2);
+
+	MPI_Group_union(G1,G2,&G_rez);
+	MPI_Group_size(G_rez,&N);
+
+	MPI_Comm_rank(MPI_COMM_WORLD,&rank);
+	MPI_Group_rank(G_rez,&gr_rank);
+
+	if (gr_rank != MPI_UNDEFINED) cout<<"process: "<<rank<<endl;
+
+	MPI_Group_free(&G1);
+	MPI_Group_free(&G2);
+	MPI_Group_free(&G_rez);
+	MPI_Finalize();
+}
+
+//2) Напишіть програму, що працює з N процесами і створює новий комунікатор:
+N = 7, {1,4,5,6}. Дублювати створений комунікатор;
+
+//Лістинг програми:
+
+#include <mpi.h>
+#include <iostream>
+using namespace std;
+
+void main(int argc,char **argv)
+{
+	int size,gr_rank;
+	int gmas[] = {1,4,5,6};
+	MPI_Group G_world,G1;
+	MPI_Comm new_comm,dup_comm;
+
+MPI_Init(&argc,&argv);
+	MPI_Comm_group(MPI_COMM_WORLD,&G_world);
+
+	MPI_Group_incl(G_world,4,gmas,&G1);
+	MPI_Comm_create(MPI_COMM_WORLD,G1,&new_comm);
+
+	MPI_Group_rank(G1,&gr_rank);
+	if (gr_rank != MPI_UNDEFINED)
+	{
+		MPI_Comm_dup(new_comm,&dup_comm);
+		MPI_Comm_size(dup_comm,&size);
+		if (!gr_rank) cout<<"dup_comm size - "<< size <<endl;
+	}
+	MPI_Finalize();
+}
+
